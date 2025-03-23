@@ -47,5 +47,4 @@ substitutions:
 
 options:
   substitution_option: 'ALLOW_LOOSE'
-  logsBucket: 'gs://cloud-run-cicd-logs'  # Replace with your bucket name
 
