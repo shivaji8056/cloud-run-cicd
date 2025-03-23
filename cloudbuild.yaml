@@ -1,0 +1,52 @@
+steps:
+# Build the Docker image
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+    - 'build'
+    - '-t'
+    - '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/cloud-run-app:${SHORT_SHA}'
+    - '.'
+  id: build-image
+
+# Push the Docker image to Artifact Registry
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+    - 'push'
+    - '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/cloud-run-app:${SHORT_SHA}'
+  id: push-image
+
+# Deploy to Cloud Run
+- name: 'gcr.io/google-cloud-sdk/cloudsdk'
+  entrypoint: gcloud
+  args:
+    - 'run'
+    - 'deploy'
+    - '${SERVICE_NAME}'
+    - '--image'
+    - '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/cloud-run-app:${SHORT_SHA}'
+    - '--platform'
+    - 'managed'
+    - '--region'
+    - '${LOCATION}'
+    - '--quiet'  # Suppress interactive prompts
+    # Add --allow-unauthenticated if needed for testing, REMOVE FOR PRODUCTION
+  id: deploy
+
+# Store images in Artifact Registry
+images:
+- '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/cloud-run-app:${SHORT_SHA}'
+
+# Substitutions to be passed from the trigger
+substitutions:
+_DEV_REPO: dev-images
+_STAGE_REPO: stage-images
+_PROD_REPO: prod-images
+_DEV_SERVICE: dev-app
+_STAGE_SERVICE: stage-app
+_PROD_SERVICE: prod-app
+_LOCATION: us-central1
+REPO_NAME: ${_PROD_REPO}  # Default to prod
+SERVICE_NAME: ${_PROD_SERVICE} # Default to prod
+
+options:
+substitution_option: 'ALLOW_LOOSE'
